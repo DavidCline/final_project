@@ -45,13 +45,13 @@ Once they've been downloaded, you'll need to **unzip the files**. Once unzipped,
 
 ### Loading the Data into R
 
-Use the first approach explained above to download and access the ATUS data for 2016. Download the CPS and Activity Summary files in a folder and unzip them and within each folder upload the files ending in .dat to `data/raw_data` filder on RStudio.cloud. To load the data in, **run the code in the `atus-data` code chunk** to create an object called `atus.all`.
+Use the first approach explained above to download and access the ATUS data for 2016. Download the CPS and Activity Summary files in a folder and unzip them and within each folder upload the files ending in .dat to `data/raw_data` filder on RStudio.cloud. To load the data in, **run the code in the atus-data code chunk** to create an object called `atus.all`.
 
 ### Importing data
 
 ```{r atus-data, warning=FALSE}
-atus.cps <- read.delim('data/raw_data/atuscps_2016.dat', sep=",")
-atus.sum <- read.delim('data/raw_data/atussum_2016.dat', sep=",")
+atus.cps <- read.delim('/cloud/project/final_project/data/raw_data/atuscps_2016.dat', sep=",")
+atus.sum <- read.delim('/cloud/project/final_project/data/raw_data/atussum_2016.dat', sep=",")
 atus.all <- atus.sum %>%
   left_join(atus.cps %>% filter(TULINENO==1), by = c("TUCASEID"))
 ```
@@ -60,87 +60,173 @@ atus.all <- atus.sum %>%
 
 ```{r initial-exploration}
 ### Add Code Here
+names(atus.all)
+glimpse(atus.all)
+head(atus.all)
+social_avg <- atus.all %>% 
+  select(t120101) %>% 
+  summarize(avg = mean(t120101))
+social_avg
 ```
 
 
 ```{r creating-childcare-var}
 atus.all <- atus.all %>% 
-    mutate(CHILDCARE = )
+    mutate(CHILDCARE = rowSums(select(., starts_with("t0301"))))
 ```
 
 ```{r childcare-density-plot}
-ggplot(atus.all) +
+ggplot(atus.all, aes(x = CHILDCARE)) +
     geom_density()
 ```
 
 ```{r gender-analysis}
 atus.all %>% 
-    group_by() %>% 
-    FUNCTION()
+    group_by(TESEX) %>% 
+    summarise(avgChildcare = mean(CHILDCARE))
 ```
 
 ```{r replacing-na}
 ## replace -1 in the variable TRDPFTPT with NA.
+atus.all$TRDPFTPT <- na_if(atus.all$TRDPFTPT, -1)
+#na_if(atus.all$TRDPFTPT, "-1")
+table(atus.all$TRDPFTPT, useNA = "always")
+
+ #iris$Petal.Width <- na_if(iris$Petal.Width, 0.2)
+
+#y <- c("abc", "def", "", "ghi")
+#na_if(y, "")
+# na_if is particularly useful inside mutate,
+# and is meant for use with vectors rather than entire data frames
+#starwars %>%select(name, eye_color) %>%mutate(eye_color = na_if(eye_color, "unknown"))
+# na_if can also be used with scoped variants of mutate
+# like mutate_if to mutate multiple columns
+#starwars %>%mutate_if(is.character, list(~na_if(., "unknown")))
+
+
+
+
 ```
 
 ```{r exploratory-analysis}
 ## add your exploratory analysis code here
+atus_eda <- atus.all %>%
+  select(TESEX, TRCHILDNUM, TEAGE, PEMARITL, TRDPFTPT, HEFAMINC, CHILDCARE) %>% 
+  filter(TRCHILDNUM > 0)
+cor_pairs <- atus_eda[, 3:7] %>% 
+  pairs()
 ```
 
 ### Regression Analysis
 
 ```{r reg-analysis}
 ## add your regression analysis code here
-reg_model <- lm()
+reg_model <- lm(CHILDCARE ~ ., data = atus_eda)
 summary(reg_model)
+######glimpse(atus_eda)
 ```
 
 ### Exploratory Analysis of Age and Activities
 
 ```{r activity-cats}
 atus.wide <- atus.all %>%
-    mutate(act01 = ,
-           act02 = ,
-           act03 = ,
-           act04 = ,
-           act05 = ,
-           act06 = ,
-           act07 = ,
-           act08 = ,
-           act09 = ,
-           act10 = ,
-           act11 = ,
-           act12 = ,
-           act13 = ,
-           act14 = ,
-           act15 = ,
-           act16 = ,
+    mutate(act01 = rowSums(select(., starts_with("t01"))),
+           act02 = rowSums(select(., starts_with("t02"))),
+           act03 = rowSums(select(., starts_with("t03"))),
+           act04 = rowSums(select(., starts_with("t04"))),
+           act05 = rowSums(select(., starts_with("t05"))),
+           act06 = rowSums(select(., starts_with("t06"))),
+           act07 = rowSums(select(., starts_with("t07"))),
+           act08 = rowSums(select(., starts_with("t08"))),
+           act09 = rowSums(select(., starts_with("t09"))),
+           act10 = rowSums(select(., starts_with("t10"))),
+           act11 = rowSums(select(., starts_with("t11"))),
+           act12 = rowSums(select(., starts_with("t12"))),
+           act13 = rowSums(select(., starts_with("t13"))),
+           act14 = rowSums(select(., starts_with("t14"))),
+           act15 = rowSums(select(., starts_with("t15"))),
+           act16 = rowSums(select(., starts_with("t16"))),
            # act17 = , there is no category 17 in the data
-           act18 = ) %>% 
+           act18 = rowSums(select(., starts_with("t18")))) %>% 
     select(TUCASEID, TEAGE, HEFAMINC, starts_with("act"))
+summary(atus.wide)
+#  summary()
+#  tidyr::gather(key = "activity", value = mins, starts_with("act")) %>% 
+ # group_by(activity) %>% 
+  #summarize(mean_time = mean(mins, na.rm = TRUE))
+
+
+
+#ggplot(atus.wide, aes(x = act02)) +
+ #   geom_density()
+
+##atus.all <- atus.all %>% 
+  ##  mutate(CHILDCARE = rowSums(select(., starts_with("t0301"))))
+
+
 ```
 
 ```{r wide-to-long}
-atus.long <- atus.wide %>% 
+library(tidyr)
+df.long <- atus.wide %>%
+  gather(key = "ACTIVITY", value = "MINS", starts_with("act"))
+  
+##atus.long <- atus.wide %>% 
   # use code to convert the wide format to long.
 ```
 
 ```{r age-activity}
-atus.long %>% 
+df.long %>% 
     group_by(ACTIVITY, TEAGE) %>% 
     summarise(AVGMINS = mean(MINS)) %>% 
-    ggplot() +
+    ggplot(aes(x = TEAGE, y = AVGMINS)) +
+    geom_point() +
+    facet_wrap(~ACTIVITY)
+   # facet_grid(ACTIVITY ~ .)
 ```
 
 ### Exploratory Analysis of Income and Activities
 
 ```{r activity-income}
-atus.long %>% 
+
+####### atus.long %>% 
+#######   group_by(ACTIVITY, HEFAMINC) %>% 
+#######   ## add the rest of the code here
+
+df.long %>%
+ # mutate(INCOME_CAT = factor(HEFAMINC))
   group_by(ACTIVITY, HEFAMINC) %>% 
+  mutate(PROP = MINS/sum(MINS)*100) %>%
+#  summarise(n())
+#  mutate(N = n()) %>% 
+#  count() %>% 
+  ggplot(aes(x = ACTIVITY, y = PROP, fill = factor(HEFAMINC))) +
+  geom_bar(stat = "identity", position = position_stack()) + 
+#  scale_fill_manual() 
+  coord_flip()
+
+
+
+#ggplot(mtcars, aes(x=`car name`, y=mpg_z, label=mpg_z)) + 
+ # geom_bar(stat='identity', aes(fill=mpg_type), width=.5)  +
+  #scale_fill_manual(name="Mileage", 
+   #                 labels = c("Above Average", "Below Average"), 
+    #                values = c("above"="#00ba38", "below"="#f8766d")) + 
+  #labs(subtitle="Normalised mileage from 'mtcars'", 
+   #    title= "Diverging Bars") + 
+  #coord_flip()
+
+
+
+
+
   ## add the rest of the code here
 ```
 
 
 ```{r save-plot}
+ggsave("/cloud/project/final_project/figures/explanatory_figures/activity-income.png")
 ## save the plot above
+#ggsav
 ```
+This is the end of the document.
