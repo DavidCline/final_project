@@ -12,6 +12,7 @@ new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"
 if(length(new.packages)) install.packages(new.packages)
 
 ## load packages
+library(data.table)
 library(janitor)
 library(ggplot2)
 library(dplyr)
